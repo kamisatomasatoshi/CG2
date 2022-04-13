@@ -155,7 +155,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	result = device->CreateCommandAllocator(
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
 		IID_PPV_ARGS(&cmdAllocator));
-		assert(SUCCEEDED(&result));
+		assert(SUCCEEDED(&result));//
 
 		//コマンドリストを生成
 		result = device->CreateCommandList(0,
