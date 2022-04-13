@@ -1,5 +1,6 @@
 #include <Windows.h>
 
+
 //ウィンドウ設定
 
 //ウィンドウサイズ
@@ -88,5 +89,40 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	ShowWindow(hwnd, SW_SHOW);
 
+
+	MSG msg{};//メッセージ
+
+	//
+
+
+	//
+
+
+	//ゲームループ
+	while (true)
+	{
+		//メッセージがある？
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);//キー入力メッセージの処理
+			DispatchMessage(&msg);//プロシージャにメッセージを送る
+		}
+
+		//×ボタンで終了のメッセージが来たらゲームループを抜ける
+		if (msg.message == WM_QUIT)
+		{
+			break;
+		}
+
+		//DrectX毎フレーム処理開始
+
+
+		//DrectX毎フレーム処理終了
+
+
+	}
+
+	//ウィンドウクラスを登録解除
+	UnregisterClass(w.lpszClassName, w.hInstance);
 	return 0;
 }
