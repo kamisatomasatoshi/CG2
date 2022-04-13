@@ -1,5 +1,10 @@
 #include <Windows.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <cassert>
 
+#pragma comment(lib,"d3d12.lib")
+#pragma commnet(lib,"dxgi.lib")
 
 //ウィンドウ設定
 
@@ -92,10 +97,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	MSG msg{};//メッセージ
 
-	//
+	//DirectX初期化処理 開始
 
 
-	//
+	//DirectX初期化処理 終了
 
 
 	//ゲームループ
