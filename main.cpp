@@ -1,3 +1,4 @@
+#define DIRECTINPUT_VERSION     0x0800   // DirectInputのバージョン指定
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -6,8 +7,10 @@
 #include <string>
 #include <DirectXMath.h>
 #include <d3dcompiler.h>
+#include <dinput.h>
 
-
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
@@ -59,7 +62,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//自動でサイズを補正する
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-
+#pragma region
 	//ウィンドウオブジェクトの生成
 	HWND hwnd = CreateWindow(w.lpszClassName,	//クラス名
 		L"DirectXGame",							//タイトルバー
@@ -76,10 +79,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ShowWindow(hwnd, SW_SHOW);
 
 	MSG msg{};//メッセージ
+#pragma endregion ウィンドウオブジェクトの生成,メッセージ
 
-
-#pragma region
 	//DirectX初期化処理 開始
+#pragma region
 #pragma region
 #ifdef _DEBUG
 	//デバッグレイヤーをオンに
@@ -243,8 +246,36 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		result = device->CreateFence(fenceVal, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
 #pragma endregion フェンス
-	//DirectX初期化処理 終了
+#pragma region
+		// DirectInputの初期化
+		IDirectInput8* directInput = nullptr;
+		result = DirectInput8Create(
+			w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+		assert(SUCCEEDED(result));
+#pragma endregion DirectInputの初期化
+#pragma region
+		// キーボードデバイスの生成
+		IDirectInputDevice8* keyboard = nullptr;
+		result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+		assert(SUCCEEDED(result));
+#pragma endregion キーボードデバイスの生成
+#pragma region
+		// 入力データ形式のセット
+		result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
+		assert(SUCCEEDED(result));
+#pragma endregion 入力データ形式のセット
+#pragma region
+		// 排他制御レベルのセット
+		result = keyboard->SetCooperativeLevel(
+			hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+		assert(SUCCEEDED(result));
+
+		//DISCL_FOREGROUND	画面が手前にある場合のみ入力を受け付ける
+		//DISCL_NONEXCLUSIVE	デバイスをこのアプリだけで専有しない
+		//DISCL_NOWINKEY	Windowsキーを無効にする
+#pragma endregion 排他制御レベルのセット
 #pragma endregion DirectX初期化処理
+	//DirectX初期化処理 終了
 
 #pragma region
 //描画初期化処理
@@ -317,19 +348,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			&vsBlob, &errorBlob);
 
 		// エラーなら
-		//if (FAILED(result)) 
-		//{
-		//	// errorBlobからエラー内容をstring型にコピー
-		//	std::string error;
-		//	error.resize(errorBlob->GetBufferSize());
-		//	std::copy_n((char*)errorBlob->GetBufferPointer(),
-		//		errorBlob->GetBufferSize(),
-		//		error.begin());
-		//	error += "\n";
-		//	// エラー内容を出力ウィンドウに表示
-		//	OutputDebugStringA(error.c_str());
-		//	assert(0);
-		//}
+		if (FAILED(result)) 
+		{
+			// errorBlobからエラー内容をstring型にコピー
+			std::string error;
+			error.resize(errorBlob->GetBufferSize());
+			std::copy_n((char*)errorBlob->GetBufferPointer(),
+				errorBlob->GetBufferSize(),
+				error.begin());
+			error += "\n";
+			// エラー内容を出力ウィンドウに表示
+			OutputDebugStringA(error.c_str());
+			assert(0);
+		}
 
 
 		// ピクセルシェーダの読み込みとコンパイル
@@ -343,19 +374,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			&psBlob, &errorBlob);
 
 		// エラーなら
-		//if (FAILED(result)) 
-		//{
-		//	// errorBlobからエラー内容をstring型にコピー
-		//	std::string error;
-		//	error.resize(errorBlob->GetBufferSize());
-		//	std::copy_n((char*)errorBlob->GetBufferPointer(),
-		//		errorBlob->GetBufferSize(),
-		//		error.begin());
-		//	error += "\n";
-		//	// エラー内容を出力ウィンドウに表示
-		//	OutputDebugStringA(error.c_str());
-		//	assert(0);
-		//}
+		if (FAILED(result)) 
+		{
+			// errorBlobからエラー内容をstring型にコピー
+			std::string error;
+			error.resize(errorBlob->GetBufferSize());
+			std::copy_n((char*)errorBlob->GetBufferPointer(),
+				errorBlob->GetBufferSize(),
+				error.begin());
+			error += "\n";
+			// エラー内容を出力ウィンドウに表示
+			OutputDebugStringA(error.c_str());
+			assert(0);
+		}
 
 		// 頂点レイアウト
 		D3D12_INPUT_ELEMENT_DESC inputLayout[] = 
@@ -439,8 +470,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			break;
 		}
-#pragma region
 		//DrectX毎フレーム処理開始
+#pragma region
+#pragma region
+		// キーボード情報の取得開始
+		keyboard->Acquire();
+
+		// 全キーの入力状態を取得する
+		BYTE key[256] = {};
+		keyboard->GetDeviceState(sizeof(key), key);
+
+		// 数字の0キーが押されていたら
+		if (key[DIK_0])
+		{
+			OutputDebugStringA("Hit 0\n");  // 出力ウィンドウに「Hit 0」と表示
+		}
+#pragma endregion キー設定
 #pragma region
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = swapChain->GetCurrentBackBufferIndex();
@@ -460,7 +505,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion 描画先指定コマンド
 #pragma region
 		// 3.画面クリア R G B A
+		FLOAT a[] = {0.0f,0.0f, 0.0f,0.0f};
 		FLOAT clearColor[] = { 0.1f,0.25f, 0.5f,0.0f }; // 青っぽい色
+
+		if (key[DIK_SPACE])     // スペースキーが押されていたら
+		{
+			//OutputDebugStringA("Hit 9\n");  // 出力ウィンドウに「Hit 0」と表示
+			for (int i = 0; i < 4; i++)
+			{
+				clearColor[i] = a[i];
+			}
+		}
+
 		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 #pragma endregion 画面クリアコマンド
 #pragma region
@@ -468,21 +524,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		
 		// ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = WINDOW_WINDTH;
-		viewport.Height = WINDOW_HEIGHT;
-		viewport.TopLeftX = 0;
-		viewport.TopLeftY = 0;
-		viewport.MinDepth = 0.0f;
-		viewport.MaxDepth = 1.0f;
+		viewport.Width = WINDOW_WINDTH; //横幅
+		viewport.Height = WINDOW_HEIGHT;//縦幅
+		viewport.TopLeftX = 0;//左上X
+		viewport.TopLeftY = 0;//左上Y
+		viewport.MinDepth = 0.0f;//最小深度(0でよい)
+		viewport.MaxDepth = 1.0f;//最大深度(1でよい)
+
 		// ビューポート設定コマンドを、コマンドリストに積む
 		commandList->RSSetViewports(1, &viewport);
 
 		// シザー矩形
 		D3D12_RECT scissorRect{};
-		scissorRect.left = 0; // 切り抜き座標左
-		scissorRect.right = scissorRect.left + WINDOW_WINDTH; // 切り抜き座標右
-		scissorRect.top = 0; // 切り抜き座標上
-		scissorRect.bottom = scissorRect.top + WINDOW_HEIGHT; // 切り抜き座標下
+		scissorRect.left = 0;									// 切り抜き座標左
+		scissorRect.right =  WINDOW_WINDTH/2;	// 切り抜き座標右
+		scissorRect.top = 0;									// 切り抜き座標上
+		scissorRect.bottom =  WINDOW_HEIGHT;	// 切り抜き座標下
 		// シザー矩形設定コマンドを、コマンドリストに積む
 		commandList->RSSetScissorRects(1, &scissorRect);
 
@@ -537,8 +594,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		result = commandList->Reset(cmdAllocator, nullptr);
 		assert(SUCCEEDED(result));
 #pragma endregion コマンド完了待ち
-		//DrectX毎フレーム処理終了
+
 #pragma endregion DrectX毎フレーム処理
+		//DrectX毎フレーム処理終了
 
 
 
