@@ -4,10 +4,15 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <DirectXMath.h>
+#include <d3dcompiler.h>
 
+
+#pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 
+using namespace DirectX;
 
 
 //ウィンドウプロシージャ
@@ -240,6 +245,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion フェンス
 	//DirectX初期化処理 終了
 #pragma endregion DirectX初期化処理
+
 
 	//ゲームループ
 	while (true)
